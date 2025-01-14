@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import TextSubmissionForm from "@/components/TextSubmissionForm";
 import SubmissionsTable from "@/components/SubmissionsTable";
 import { useToast } from "@/hooks/use-toast";
@@ -12,12 +11,7 @@ const Index = () => {
   const { data: submissions = [], refetch } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
-      // const { data, error } = await supabase
-      //   .from("Posts")
-      //   .select("*")
-      //   .order("created_at", { ascending: false });
       try {
-        //const response = await axios.get("http://localhost:8080/posts");
         const response = await axios.get(import.meta.env.VITE_API_HOST + '/posts');
         console.log(import.meta.env.VITE_API_HOST);
 
@@ -40,7 +34,7 @@ const Index = () => {
   });
 
   const handleSubmit = async (text: string) => {
-    //const { error } = await supabase.from("Posts").insert([{ content: text }]);
+    
     try {
       const response = await axios.post(import.meta.env.VITE_API_HOST + '/posts', { content: text });
       // console.log(response);
