@@ -13,6 +13,23 @@ const jsonParser = bodyParser.json();
 const expectedAudience = `/projects/${process.env.PROJ_NUMBER}/apps/${process.env.PROJ_ID}`;
 const oAuth2Client = new OAuth2Client();
 
+// Set up connection to MongoDB
+mongoose.connect(process.env.ATLAS_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('Error connecting to MongoDB:', err));
+
+// Define schema and model for posts
+const postSchema = new mongoose.Schema({
+  content: String,
+  created_at: String,
+  matchingJWT: Boolean,
+  id: Number
+});
+const Post = mongoose.model('Post', postSchema);
+
+const app = express();
+app.use(cors());
+
 // Middleware to verify IAP JWT. GCP guide: https://cloud.google.com/iap/docs/signed-headers-howto
 app.use(async (req, res) => {
     const iapJwt = req.headers['x-goog-iap-jwt-assertion'];
@@ -33,23 +50,6 @@ app.use(async (req, res) => {
         return res.status(401).send('Unauthorized');
     }
 });
-
-// Set up connection to MongoDB
-mongoose.connect(process.env.ATLAS_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('Error connecting to MongoDB:', err));
-
-// Define schema and model for posts
-const postSchema = new mongoose.Schema({
-  content: String,
-  created_at: String,
-  matchingJWT: Boolean,
-  id: Number
-});
-const Post = mongoose.model('Post', postSchema);
-
-const app = express();
-app.use(cors());
 
 // Send all posts sorted by time descending
 app.get('/posts', async(req, res) => {
@@ -88,6 +88,14 @@ app.post('/posts', jsonParser, async(req, res) => {
     console.log(result);
     res.send(post);
 });
+
+// Set up rate limiting (CodeQL finding). Limit to 500 requests per 15 minutes
+var RateLimit = require('express-rate-limit');
+var limiter = RateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500, 
+});
+app.use(limiter);
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
