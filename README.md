@@ -1,4 +1,4 @@
-# JWT Header Project
+# JWT Verifier Project
 
 Project that verifies whether or not text submitted into a text box is a valid JWT signed with a specific public key.
 
