@@ -9,7 +9,7 @@ Initial UI and README composed by Lovable. Some portions removed and edited as t
 git clone https://github.com/sjgllghr/JWTProject.git
 
 # Step 2: Navigate to the project directory.
-cd JWTProject
+cd JWTProject/front/
 
 # Step 3: Install the necessary dependencies.
 npm i
