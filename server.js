@@ -30,6 +30,14 @@ const Post = mongoose.model('Post', postSchema);
 const app = express();
 app.use(cors());
 
+// Set up rate limiting (CodeQL finding). Limit to 500 requests per 15 minutes
+var RateLimit = require('express-rate-limit');
+var limiter = RateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500, 
+});
+app.use(limiter);
+
 // Middleware to verify IAP JWT. GCP guide: https://cloud.google.com/iap/docs/signed-headers-howto
 app.use(async (req, res) => {
     const iapJwt = req.headers['x-goog-iap-jwt-assertion'];
@@ -88,14 +96,6 @@ app.post('/posts', jsonParser, async(req, res) => {
     console.log(result);
     res.send(post);
 });
-
-// Set up rate limiting (CodeQL finding). Limit to 500 requests per 15 minutes
-var RateLimit = require('express-rate-limit');
-var limiter = RateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500, 
-});
-app.use(limiter);
 
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
