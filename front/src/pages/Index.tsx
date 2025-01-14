@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TextSubmissionForm from "@/components/TextSubmissionForm";
 import SubmissionsTable from "@/components/SubmissionsTable";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import axios from "axios";
 
 const Index = () => {
   const { toast } = useToast();
@@ -13,12 +12,22 @@ const Index = () => {
   const { data: submissions = [], refetch } = useQuery({
     queryKey: ["posts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("Posts")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // const { data, error } = await supabase
+      //   .from("Posts")
+      //   .select("*")
+      //   .order("created_at", { ascending: false });
+      try {
+        //const response = await axios.get("http://localhost:8080/posts");
+        const response = await axios.get(import.meta.env.VITE_API_HOST + '/posts');
+        console.log(import.meta.env.VITE_API_HOST);
 
-      if (error) {
+        return response.data.map((post) => ({
+          id: post._id,
+          text: post.content || "",
+          timestamp: new Date(post.created_at).toLocaleString(),
+          matchingJWT: post.matchingJWT
+        }));
+      } catch (error) {
         console.error("Error fetching posts:", error);
         toast({
           title: "Error fetching posts",
@@ -27,19 +36,22 @@ const Index = () => {
         });
         return [];
       }
-
-      return data.map((post) => ({
-        id: post.id,
-        text: post.content || "",
-        timestamp: new Date(post.created_at).toLocaleString(),
-      }));
     },
   });
 
   const handleSubmit = async (text: string) => {
-    const { error } = await supabase.from("Posts").insert([{ content: text }]);
+    //const { error } = await supabase.from("Posts").insert([{ content: text }]);
+    try {
+      const response = await axios.post(import.meta.env.VITE_API_HOST + '/posts', { content: text });
+      // console.log(response);
 
-    if (error) {
+      toast({
+        title: "Success",
+        description: "Your post has been created",
+      });
+
+      refetch();
+    } catch (error) {
       console.error("Error creating post:", error);
       toast({
         title: "Error creating post",
@@ -48,37 +60,14 @@ const Index = () => {
       });
       return;
     }
-
-    toast({
-      title: "Success",
-      description: "Your post has been created",
-    });
-    refetch();
-  };
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Text Submission System
-          </h1>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-800 text-center mb-8">
+          JWT Verifier
+        </h1>
         <TextSubmissionForm onSubmit={handleSubmit} />
         <SubmissionsTable submissions={submissions} />
       </div>
