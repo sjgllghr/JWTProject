@@ -5,6 +5,7 @@ const {importSPKI, jwtVerify} = require('jose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const {OAuth2Client} = require('google-auth-library');
+const jsrsasign = require('jsrsasign');
 
 require('dotenv').config();
 const jsonParser = bodyParser.json();
@@ -74,18 +75,16 @@ app.get('/posts', async(req, res) => {
 // Save a post to the database. If the JWT can be validated with the provided 
 // public key, set matchingJWT to true
 app.post('/posts', jsonParser, async(req, res) => {
-    const key = await importSPKI(process.env.JWT_PUBLIC_KEY);
-    console.log(req.body);
 
     matchingJWT = false;
     try {
-        const verifiedJWT = await jwtVerify(req.body.content, key);
-        console.log(verifiedJWT);
-        matchingJWT = true;
+        const pubkey = jsrsasign.KEYUTIL.getKey(process.env.JWT_PUBLIC_KEY);
+        let verifiedJWT = jsrsasign.KJUR.jws.JWS.verifyJWT(req.body.content, pubkey, {alg: ['ES256']});
+        matchingJWT = verifiedJWT;
     } catch (error) {
         console.log(error);
     }
-
+    
     const post = new Post({
         content: req.body.content,
         created_at: new Date(),
@@ -94,7 +93,7 @@ app.post('/posts', jsonParser, async(req, res) => {
 
     result = await post.save();
     console.log(result);
-    res.send(post);
+    res.send(result);
 });
 
 // Serve the static files from the React app
